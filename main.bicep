@@ -86,7 +86,7 @@ module r_fn_app 'modules/functions/create_function.bicep' = {
   name: '${funcParams.funcNamePrefix}_${deploymentParams.loc_short_code}_${deploymentParams.global_uniqueness}_fn_app'
   params: {
     deploymentParams:deploymentParams
-    uami_name_func: r_uami.outputs.uami_name_vm
+    uami_name_func: r_uami.outputs.uami_name_func
     funcParams: funcParams
     funcSaName: r_sa.outputs.saName_1
 

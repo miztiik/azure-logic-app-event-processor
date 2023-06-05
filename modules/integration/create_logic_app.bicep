@@ -39,16 +39,14 @@ resource r_uami_logic_app 'Microsoft.ManagedIdentity/userAssignedIdentities@2023
   name: uami_name_logic_app
 }
 
-var api_fragment = '${subscription().id}/providers/Microsoft.Web/locations/${deploymentParams.location}/managedApis/'
-
 var logic_app_name = replace('${logicAppParams.namePrefix}-${deploymentParams.loc_short_code}-logic-app-${deploymentParams.enterprise_name_suffix}-${deploymentParams.global_uniqueness}', '_', '-')
 
 resource r_logic_app_conn_svc_bus 'Microsoft.Web/connections@2016-06-01' = {
-  name: 'logic_app_conn_svc_bus'
+  name: 'conn_svc_bus'
   location: deploymentParams.location
+  tags: tags
   properties: {
     displayName: 'conn_svc_bus'
-    customParameterValues: {}
     api: {
       id: subscriptionResourceId('Microsoft.Web/locations/managedApis', deploymentParams.location, 'servicebus')
     }
@@ -56,7 +54,6 @@ resource r_logic_app_conn_svc_bus 'Microsoft.Web/connections@2016-06-01' = {
       connectionString: listKeys(resourceId('Microsoft.ServiceBus/namespaces/authorizationRules', svc_bus_ns_name, 'RootManageSharedAccessKey'), '2017-04-01').primaryConnectionString
     }
   }
-  dependsOn: []
 }
 
 
@@ -72,7 +69,6 @@ resource r_logic_app 'Microsoft.Logic/workflows@2019-05-01' = {
   }
   properties: {
     state: 'Enabled'
-
     definition: {
       '$schema': 'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#'
       contentVersion: '1.0.0.0'
@@ -83,13 +79,6 @@ resource r_logic_app 'Microsoft.Logic/workflows@2019-05-01' = {
         }
       }
       triggers: {
-        // recurrence: {
-        //   type: 'Recurrence'
-        //   recurrence: {
-        //     frequency: 'Minute'
-        //     interval: 5
-        //   }
-        // }
         // manual: {
         //   type: 'Request'
         //   kind: 'Http'
@@ -159,19 +148,14 @@ resource r_logic_app 'Microsoft.Logic/workflows@2019-05-01' = {
       '$connections': {
         value: {
           servicebus: {
-            authentication: {
-              identity: {
-                type: 'userAssignedIdentity'
-                userAssignedIdentity: r_uami_logic_app.id
-              }
-            }
             connectionId: r_logic_app_conn_svc_bus.id
             connectionName: r_logic_app_conn_svc_bus.name
-            id: '${subscription().id}/providers/Microsoft.Web/locations/${deploymentParams.location}/managedApis/servicebus'
+            id: subscriptionResourceId('Microsoft.Web/locations/managedApis', deploymentParams.location, 'servicebus')
           }
         }
       }
     }
+
   }
 }
 
@@ -231,8 +215,8 @@ var builtInRoleNames = [
     id: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '92aaf0da-9dab-42b6-94a3-d43ce8d16293')
   }
   {
-    name: 'Log Analytics Reader'
-    id: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '73c42c96-874c-492b-b04d-ab87d138a893')
+    name: 'Data Factory Contributor'
+    id: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '673868aa-7521-48a0-acc6-0f60742d39f5')
   }
   {
     name: 'Logic App Contributor'
@@ -294,7 +278,7 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-prev
 
 // Stream Analytics Diagnostic Settings
 resource logic_app_diag 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: '${logic_app_name}_diag'
+  name: '${logic_app_name}-diag'
   scope: r_logic_app
   properties: {
     workspaceId: logAnalyticsWorkspaceId

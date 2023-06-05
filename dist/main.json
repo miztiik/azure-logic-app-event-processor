@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.17.1.54307",
-      "templateHash": "10728445468223221779"
+      "templateHash": "4668822089188206961"
     }
   },
   "parameters": {
@@ -891,7 +891,7 @@
             "value": "[parameters('deploymentParams')]"
           },
           "uami_name_func": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}_{2}_uami', parameters('deploymentParams').enterprise_name_suffix, parameters('deploymentParams').loc_short_code, parameters('deploymentParams').global_uniqueness)), '2022-09-01').outputs.uami_name_vm.value]"
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}_{2}_uami', parameters('deploymentParams').enterprise_name_suffix, parameters('deploymentParams').loc_short_code, parameters('deploymentParams').global_uniqueness)), '2022-09-01').outputs.uami_name_func.value]"
           },
           "funcParams": {
             "value": "[parameters('funcParams')]"
@@ -1397,7 +1397,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.17.1.54307",
-              "templateHash": "8488703761606243530"
+              "templateHash": "2810191678477150555"
             }
           },
           "parameters": {
@@ -1437,7 +1437,6 @@
             }
           },
           "variables": {
-            "api_fragment": "[format('{0}/providers/Microsoft.Web/locations/{1}/managedApis/', subscription().id, parameters('deploymentParams').location)]",
             "logic_app_name": "[replace(format('{0}-{1}-logic-app-{2}-{3}', parameters('logicAppParams').namePrefix, parameters('deploymentParams').loc_short_code, parameters('deploymentParams').enterprise_name_suffix, parameters('deploymentParams').global_uniqueness), '_', '-')]",
             "cosmosDbDataContributor_RoleDefinitionId": "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions', parameters('cosmos_db_accnt_name'), '00000000-0000-0000-0000-000000000002')]",
             "builtInRoleNames": [
@@ -1470,8 +1469,8 @@
                 "id": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '92aaf0da-9dab-42b6-94a3-d43ce8d16293')]"
               },
               {
-                "name": "Log Analytics Reader",
-                "id": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '73c42c96-874c-492b-b04d-ab87d138a893')]"
+                "name": "Data Factory Contributor",
+                "id": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '673868aa-7521-48a0-acc6-0f60742d39f5')]"
               },
               {
                 "name": "Logic App Contributor",
@@ -1519,11 +1518,11 @@
             {
               "type": "Microsoft.Web/connections",
               "apiVersion": "2016-06-01",
-              "name": "logic_app_conn_svc_bus",
+              "name": "conn_svc_bus",
               "location": "[parameters('deploymentParams').location]",
+              "tags": "[parameters('tags')]",
               "properties": {
                 "displayName": "conn_svc_bus",
-                "customParameterValues": {},
                 "api": {
                   "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', parameters('deploymentParams').location, 'servicebus')]"
                 },
@@ -1567,12 +1566,12 @@
                         "interval": 3
                       },
                       "inputs": {
+                        "method": "get",
                         "host": {
                           "connection": {
                             "name": "@parameters('$connections')['servicebus']['connectionId']"
                           }
                         },
-                        "method": "get",
                         "path": "[format('/@{{encodeURIComponent(encodeURIComponent(''{0}''))}}/messages/head', parameters('svc_bus_q_name'))]",
                         "queries": {
                           "queueType": "Main"
@@ -1586,22 +1585,16 @@
                   "$connections": {
                     "value": {
                       "servicebus": {
-                        "authentication": {
-                          "identity": {
-                            "type": "userAssignedIdentity",
-                            "userAssignedIdentity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('uami_name_logic_app'))]"
-                          }
-                        },
-                        "connectionId": "[resourceId('Microsoft.Web/connections', 'logic_app_conn_svc_bus')]",
-                        "connectionName": "logic_app_conn_svc_bus",
-                        "id": "[format('{0}/providers/Microsoft.Web/locations/{1}/managedApis/servicebus', subscription().id, parameters('deploymentParams').location)]"
+                        "connectionId": "[resourceId('Microsoft.Web/connections', 'conn_svc_bus')]",
+                        "connectionName": "conn_svc_bus",
+                        "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', parameters('deploymentParams').location, 'servicebus')]"
                       }
                     }
                   }
                 }
               },
               "dependsOn": [
-                "[resourceId('Microsoft.Web/connections', 'logic_app_conn_svc_bus')]"
+                "[resourceId('Microsoft.Web/connections', 'conn_svc_bus')]"
               ]
             },
             {
@@ -1641,7 +1634,7 @@
               "type": "Microsoft.Insights/diagnosticSettings",
               "apiVersion": "2021-05-01-preview",
               "scope": "[format('Microsoft.Logic/workflows/{0}', variables('logic_app_name'))]",
-              "name": "[format('{0}_diag', variables('logic_app_name'))]",
+              "name": "[format('{0}-diag', variables('logic_app_name'))]",
               "properties": {
                 "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
                 "logs": [
