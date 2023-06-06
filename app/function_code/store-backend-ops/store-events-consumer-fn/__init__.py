@@ -77,36 +77,39 @@ def write_to_cosmosdb(data: dict, db_container):
     except Exception as e:
         logging.exception(f"ERROR:{str(e)}")
 
-def main(msg: func.ServiceBusMessage) -> str:
+def main(msg) -> str:
+# def main(msg: func.ServiceBusMessage) -> str:
     _a_resp = {"status": False,
                "miztiik_event_processed": False,
                "last_processed_on":None}
 
-    msg_body= msg.get_body().decode("utf-8")
+    logging.info(f"msg: {msg}")
+    logging.info(f"msg: {msg.get_json()}")
+    logging.info(f"msg_type: {type(msg.get_json())}")
     try:
+        msg_body= msg.get_body().decode("utf-8")
+        # result = json.dumps({
+        #     'message_id': msg.message_id,
+        #     'body': msg.get_body().decode('utf-8'),
+        #     'content_type': msg.content_type,
+        #     'delivery_count': msg.delivery_count,
+        #     'expiration_time': (msg.expiration_time.isoformat() if
+        #                         msg.expiration_time else None),
+        #     'label': msg.label,
+        #     'partition_key': msg.partition_key,
+        #     'reply_to': msg.reply_to,
+        #     'reply_to_session_id': msg.reply_to_session_id,
+        #     'scheduled_enqueue_time': (msg.scheduled_enqueue_time.isoformat() if
+        #                             msg.scheduled_enqueue_time else None),
+        #     'session_id': msg.session_id,
+        #     'time_to_live': msg.time_to_live,
+        #     'to': msg.to,
+        #     'user_properties': msg.user_properties,
+        #     'event_type': msg.user_properties.get('event_type')
+        # })
 
-        result = json.dumps({
-            'message_id': msg.message_id,
-            'body': msg.get_body().decode('utf-8'),
-            'content_type': msg.content_type,
-            'delivery_count': msg.delivery_count,
-            'expiration_time': (msg.expiration_time.isoformat() if
-                                msg.expiration_time else None),
-            'label': msg.label,
-            'partition_key': msg.partition_key,
-            'reply_to': msg.reply_to,
-            'reply_to_session_id': msg.reply_to_session_id,
-            'scheduled_enqueue_time': (msg.scheduled_enqueue_time.isoformat() if
-                                    msg.scheduled_enqueue_time else None),
-            'session_id': msg.session_id,
-            'time_to_live': msg.time_to_live,
-            'to': msg.to,
-            'user_properties': msg.user_properties,
-            'event_type': msg.user_properties.get('event_type')
-        })
-
-        logging.info(f"{json.dumps(msg_body, indent=4)}")
-        logging.info(f"recv_msg: {result}")
+        logging.info(f"{json.dumps(msg.get_json(), indent=4)}")
+        logging.info(f"recv_msg: {msg.get_json()}")
 
         azure_log_level = logging.getLogger("azure").setLevel(logging.ERROR)
         default_credential = DefaultAzureCredential(logging_enable=False,logging=azure_log_level)
@@ -118,12 +121,11 @@ def main(msg: func.ServiceBusMessage) -> str:
         db_container = db_client.get_container_client(GlobalArgs.COSMOS_DB_CONTAINER_NAME)
 
         # write to blob
-        _evnt_type=msg.user_properties.get("event_type")
-        write_to_blob(_evnt_type, json.loads(msg_body), blob_svc_client)
+        _evnt_type=msg.get_json().get("Properties").get("event_type")
+        write_to_blob(_evnt_type, msg.get_json(), blob_svc_client)
 
         # write to cosmosdb
-        write_to_cosmosdb(json.loads(msg_body), db_container)
-
+        write_to_cosmosdb(msg.get_json(), db_container)
         _a_resp["status"] = True
         _a_resp["miztiik_event_processed"] = True
         _a_resp["last_processed_on"] = datetime.datetime.now().isoformat()

@@ -19,6 +19,8 @@ param cosmos_db_accnt_name string
 param svc_bus_ns_name string
 param svc_bus_q_name string
 
+param fn_app_name string
+
 @description('Get Storage Account Reference')
 resource r_sa 'Microsoft.Storage/storageAccounts@2021-06-01' existing = {
   name: saName
@@ -29,10 +31,6 @@ resource r_cosmos_db_accnt 'Microsoft.DocumentDB/databaseAccounts@2022-08-15' ex
   name: cosmos_db_accnt_name
 }
 
-@description('Get Service Bus Namespace Reference')
-resource r_svc_bus_ns_ref 'Microsoft.ServiceBus/namespaces@2022-01-01-preview' existing = {
-  name: svc_bus_ns_name
-}
 
 @description('Get function existing User-Assigned Managed Identity')
 resource r_uami_logic_app 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
@@ -55,7 +53,6 @@ resource r_logic_app_conn_svc_bus 'Microsoft.Web/connections@2016-06-01' = {
     }
   }
 }
-
 
 resource r_logic_app 'Microsoft.Logic/workflows@2019-05-01' = {
   name: logic_app_name
@@ -93,7 +90,7 @@ resource r_logic_app 'Microsoft.Logic/workflows@2019-05-01' = {
         //     }
         //   }
         // }
-        'When_a_message_is_received_in_a_queue_(auto-complete)': {
+        msg_in_q: {
           type: 'ApiConnection'
           recurrence: {
             frequency: 'Second'
@@ -135,13 +132,41 @@ resource r_logic_app 'Microsoft.Logic/workflows@2019-05-01' = {
         // },
       }
       actions: {
-        // actionType: {
-        //   type: 'http'
-        //   inputs: {
-        //     method: 'GET'
-        //     // uri: testUri
-        //   }
-        // }
+        Condition: {
+          type: 'If'
+          runAfter: {}
+          expression: {
+            and: [
+              {
+                equals: [
+                  '@triggerBody()?[\'Properties\']?[\'priority_shipping\']'
+                  'True'
+                ]
+              }
+            ]
+          }
+          actions: {
+            'trigger-shipping-process-consumer-fn': {
+              inputs: {
+                body: '@triggerBody()'
+                function: {
+                  // id: '/subscriptions/58379947-56e0-477a-bbe3-8e671aadab83/resourceGroups/Miztiik_Enterprises_ne_event_processor_008/providers/Microsoft.Web/sites/event-processor-store-backend-ne-fn-app-008/functions/store-events-consumer-fn'
+                  id: '/subscriptions/${subscription().subscriptionId }/resourceGroups/${resourceGroup().name}/providers/Microsoft.Web/sites/${fn_app_name}/functions/store-events-consumer-fn'
+                }
+              }
+              type: 'Function'
+              runAfter: {}
+            }
+          }
+          // else:{
+          //   actions:{
+          //     'do-nothing':{
+          //       type: 'DoNothing'
+          //       runAfter: {}
+          //     }
+          //   }
+          // }
+        }
       }
     }
     parameters: {
@@ -158,7 +183,6 @@ resource r_logic_app 'Microsoft.Logic/workflows@2019-05-01' = {
 
   }
 }
-
 
 ///////////////////////////////////////////
 //                                       //

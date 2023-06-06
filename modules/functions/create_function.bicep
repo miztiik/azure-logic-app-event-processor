@@ -341,7 +341,7 @@ resource r_fnLogsToAzureMonitor 'Microsoft.Insights/diagnosticSettings@2021-05-0
 output module_metadata object = module_metadata
 
 //FunctionApp Outputs
-output fnAppName string = r_fn_app.name
+output fn_app_name string = r_fn_app.name
 
 // Function Outputs
 // output fnName string = r_fn_1.name

@@ -39,6 +39,7 @@ def _rand_coin_flip():
     if os.getenv("TRIGGER_RANDOM_FAILURES", True):
         if random.randint(1, 100) > 90:
             r = True
+    logging.info(f"coin_flip:{r}")
     return r
 
 def _gen_uuid():

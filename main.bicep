@@ -144,6 +144,8 @@ module r_logic_app 'modules/integration/create_logic_app.bicep' = {
     svc_bus_ns_name: r_svc_bus.outputs.svc_bus_ns_name
     svc_bus_q_name: r_svc_bus.outputs.svc_bus_q_name
 
+    fn_app_name: r_fn_app.outputs.fn_app_name
+
   }
   dependsOn: [
     r_svc_bus

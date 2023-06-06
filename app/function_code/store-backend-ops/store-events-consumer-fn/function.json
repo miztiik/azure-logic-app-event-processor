@@ -6,7 +6,7 @@
           "authLevel": "anonymous",
           "type": "httpTrigger",
           "direction": "in",
-          "name": "req",
+          "name": "msg",
           "timeout": "300"
       }
   ]
