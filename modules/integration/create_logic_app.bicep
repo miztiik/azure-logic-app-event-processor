@@ -150,7 +150,6 @@ resource r_logic_app 'Microsoft.Logic/workflows@2019-05-01' = {
               inputs: {
                 body: '@triggerBody()'
                 function: {
-                  // id: '/subscriptions/58379947-56e0-477a-bbe3-8e671aadab83/resourceGroups/Miztiik_Enterprises_ne_event_processor_008/providers/Microsoft.Web/sites/event-processor-store-backend-ne-fn-app-008/functions/store-events-consumer-fn'
                   id: '/subscriptions/${subscription().subscriptionId }/resourceGroups/${resourceGroup().name}/providers/Microsoft.Web/sites/${fn_app_name}/functions/store-events-consumer-fn'
                 }
               }
